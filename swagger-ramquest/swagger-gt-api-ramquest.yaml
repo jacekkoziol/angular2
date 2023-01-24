@@ -1,0 +1,264 @@
+openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: ''
+  description: ''
+  
+tags:
+  - name: Authentication
+    description: The authentication operations
+    
+servers:
+  - description: Development Server
+    url: https://generaltitlewebexternalapi-dev.azurewebsites.net/int/
+  - description: Stage Server
+    url: https://generaltitlewebexternalapi-stage.azurewebsites.net/int/
+    
+security:
+  - tokenAuth: []
+
+paths: 
+  '/auth':
+    post:
+      tags:
+        - Authentication
+      summary: Authenticate User and get the Bearer Token for authentication
+      requestBody:
+        description: User Login
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/IUserAuthRequest'
+            encoding:
+              username:
+                style: form
+              password:
+                style: form
+      security: []
+      responses:
+        '200': 
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/API_Res_Auth'
+        '400':
+          description: |
+            Possible Errors:
+            * ERR-AUTH: Wrong username or password
+            * ERR-UNKNOWN: Unknown error, please contact administrator
+          content:
+            application/json:
+              schema:
+                # $ref: '#/components/schemas/API_Error_Response'
+                $ref: '#/components/schemas/API_Err_Auth'
+        '500': 
+          $ref: '#/components/responses/ServerError'
+
+components:
+  securitySchemes:
+    tokenAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: |
+        To Authorized, please use `/auth` endpoint from `Authentication` section:
+        
+        1. Choose `Development Server` from **Servers** list
+        2. Expand `POST /auth`
+        3. Press `Try it out` button
+        4. Provide `username` and `password`
+        5. Press `Execute` button
+        6. Wait for response (200) and then copy the value from the `token` field.
+        7. Paste the value into field below.
+        8. Press `Authorize` button.
+        
+  responses:
+    UnauthorizedError:
+      description: Access token is missing or invalid
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/IApiResponseData'
+              - type: object
+                properties:
+                  status:
+                    default: error
+                  data:
+                    default: null
+                  info:
+                    default:
+                      - code: 'ERR-CODE-401'
+                        message: 'Access token is missing or invalid'
+                        details: []
+    ForbiddenError:
+      description: The access to the resource is forbidden.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/IApiResponseData'
+              - type: object
+                properties:
+                  status:
+                    default: error
+                  data:
+                    default: null
+                  info:
+                    default:
+                      - code: 'ERR-CODE-403'
+                        message: 'You are not authorized to access this resource.'
+                        details: []
+                          
+    ServerError:
+      description: Server Error
+        
+  schemas:
+    IApiResponseData:
+      type: object
+      properties:
+        status: 
+          type: string
+          enum:
+            - success
+            - error
+            - warning
+        data:
+          type: object
+        info:
+          type: array
+          items:
+            $ref: '#/components/schemas/IApiResponseInfo'
+          nullable: false
+          default: []
+    
+    # IApiResponseDataList:
+    #   type: object
+    #   properties:
+    #     status: 
+    #       type: string
+    #       enum:
+    #         - success
+    #         - error
+    #         - warning
+    #     data:
+    #       $ref: '#/components/schemas/IApiDataList'
+    #     info:
+    #       type: array
+    #       items:
+    #         $ref: '#/components/schemas/IApiResponseInfo'
+    #       nullable: false
+    #       default: []
+          
+    IApiResponseInfo:
+      type: object
+      properties:
+        code:
+          type: string
+        message: 
+          type: string
+        details:
+          type: array
+          items:
+            type: string
+            
+    IApiDataList:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: The number of total results
+        page:
+          type: integer
+          description: The page number of the results (if the results are limited)
+        limit:
+          type: integer
+          description: The max number of results returned by API per page
+        sort:
+          $ref: '#/components/schemas/ESortDirection'
+        sortBy:
+          type: string
+          description: The name of the object property by which the sort was performed
+        data:
+          type: array
+          items: {}
+          
+    ESortDirection:
+      type: string
+      enum:
+        - asc
+        - desc
+      description: >
+        Sort order:
+         * `asc` - Ascending, from A to Z
+         * `desc` - Descending, from Z to A
+  
+  
+    IUserAuthRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        password: 
+          type: string
+          format: password
+    
+    # IUserAuthRequest:
+    #   type: object
+    #   properties:
+    #     client:
+    #       type: string
+    #     secret: 
+    #       type: string
+    #       format: password
+          
+    IUserAuthData:
+      type: object
+      properties:
+        token:
+          type: string
+        expires:
+          type: string
+          format: date-time
+        
+    # Common API Responses
+    API_Error_Response:
+      allOf:
+        - $ref: '#/components/schemas/IApiResponseData'
+        - type: object
+          properties:
+            status:
+              default: error
+            data:
+              default: null
+            info:
+              default:
+                - code: 'ERR-CODE'
+                  message: 'Error Message'
+                  details: ['Optional information 1', 'Optional information 2']
+     
+    # Specific API Responses     
+    API_Res_Auth:
+      allOf:
+        - $ref: '#/components/schemas/IApiResponseData'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/IUserAuthData'
+            info:
+              default: []
+          
+    API_Err_Auth:
+      allOf:
+        - $ref: '#/components/schemas/API_Error_Response'
+        - type: object
+          properties:
+            data:
+              default: null
+            info:
+              # default: []
+              example:
+                - code: 'ERR-AUTH'
+                  message: 'Wrong username or password.'
+                  details: []
