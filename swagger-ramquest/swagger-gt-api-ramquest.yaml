@@ -7,6 +7,8 @@ info:
 tags:
   - name: Authentication
     description: The authentication operations
+  - name: Sync
+    description: The data synchronization
     
 servers:
   - description: Development Server
@@ -52,6 +54,39 @@ paths:
               schema:
                 # $ref: '#/components/schemas/API_Error_Response'
                 $ref: '#/components/schemas/API_Err_Auth'
+        '500': 
+          $ref: '#/components/responses/ServerError'
+          
+  '/sync':
+    post:
+      tags:
+        - Sync
+      summary: Synchronize the data
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IExampleData'
+      responses:
+        '200': 
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/API_Res_Example_Data'
+        '400':
+          description: |
+            Possible Errors:
+            * ERR-VALIDATION: Wrong data type/format for particular fields or required field(s) missing
+            * ERR-UNKNOWN: Unknown error, please contact administrator
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/API_Error_Response'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
         '500': 
           $ref: '#/components/responses/ServerError'
 
@@ -163,36 +198,36 @@ components:
           items:
             type: string
             
-    IApiDataList:
-      type: object
-      properties:
-        total:
-          type: integer
-          description: The number of total results
-        page:
-          type: integer
-          description: The page number of the results (if the results are limited)
-        limit:
-          type: integer
-          description: The max number of results returned by API per page
-        sort:
-          $ref: '#/components/schemas/ESortDirection'
-        sortBy:
-          type: string
-          description: The name of the object property by which the sort was performed
-        data:
-          type: array
-          items: {}
+    # IApiDataList:
+    #   type: object
+    #   properties:
+    #     total:
+    #       type: integer
+    #       description: The number of total results
+    #     page:
+    #       type: integer
+    #       description: The page number of the results (if the results are limited)
+    #     limit:
+    #       type: integer
+    #       description: The max number of results returned by API per page
+    #     sort:
+    #       $ref: '#/components/schemas/ESortDirection'
+    #     sortBy:
+    #       type: string
+    #       description: The name of the object property by which the sort was performed
+    #     data:
+    #       type: array
+    #       items: {}
           
-    ESortDirection:
-      type: string
-      enum:
-        - asc
-        - desc
-      description: >
-        Sort order:
-         * `asc` - Ascending, from A to Z
-         * `desc` - Descending, from Z to A
+    # ESortDirection:
+    #   type: string
+    #   enum:
+    #     - asc
+    #     - desc
+    #   description: >
+    #     Sort order:
+    #     * `asc` - Ascending, from A to Z
+    #     * `desc` - Descending, from Z to A
   
   
     IUserAuthRequest:
@@ -221,6 +256,26 @@ components:
         expires:
           type: string
           format: date-time
+          
+    # Example Data
+    IExampleData:
+      type: object
+      properties:
+        afn:
+          type: string
+        closingDate:
+          type: string
+          format: date
+        city:
+          type: string
+        county:
+          type: string
+        state:
+          type: string
+        isOver500k:
+          type: boolean
+        borrowerFullName:
+          type: string
         
     # Common API Responses
     API_Error_Response:
@@ -262,3 +317,39 @@ components:
                 - code: 'ERR-AUTH'
                   message: 'Wrong username or password.'
                   details: []
+                  
+    # API_Res_Example_Data:
+    #   allOf:
+    #     - $ref: '#/components/schemas/IApiResponseData'
+    #     - type: object
+    #       properties:
+    #         data:
+    #           $ref: '#/components/schemas/IExampleData'
+    #         info:
+    #           default: []
+    
+    # IExampleData:
+    #   type: object
+    #   properties:
+    #     afn:
+    #       type: string
+    #     closingDate:
+    #       type: string
+    #       format: date
+    
+    API_Res_Example_Data:
+      type: object
+      properties:
+        isError: 
+          type: boolean
+          default: false
+        # data:
+        #   type: object
+        #   default:
+        #     $ref: '#/components/schemas/IExampleData'
+        message:
+          type: string
+          nullable: false
+          default: Message received properly at 1/24/2023 2:47:50 PM UTC.
+        originalPayload:
+          $ref: '#/components/schemas/IExampleData'
